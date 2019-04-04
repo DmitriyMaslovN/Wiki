@@ -1,0 +1,180 @@
+const thunk = window.ReduxThunk.default; // codepen
+const { applyMiddleware, createStore} = Redux;
+const { connect, Provider } = ReactRedux;
+
+const RECEIVED_DATA = 'RECEIVED_DATA';
+const IS_LOADING = 'IS_LOADING';
+const ERROR = 'ERROR';
+
+const hasError = (bool) =>{
+  return{
+    type: ERROR,
+    isErr: bool
+  }
+}
+
+const loadingData = (bool) => {
+  return{
+    type: IS_LOADING,
+    isLoading: bool
+  }
+}
+const receivedData = (article) =>{
+  return{
+    type: RECEIVED_DATA,
+    article
+  }
+}
+// Thunk middleware
+
+function fetchData(data){
+  //console.log(data)
+  return (dispatch) => {
+    dispatch(loadingData(true)); // loading...
+    
+    if(data !== undefined){
+      fetch(`https://en.wikipedia.org/w/api.php?format=json&action=query&origin=*&generator=search&gsrnamespace=0&gsrlimit=10&prop=pageimages|extracts&pilimit=max&exintro&explaintext&exsentences=2&exlimit=max&gsrsearch=${data}`)
+      .then(res => res.json())
+      .then(result =>{ // chain for dowloading data
+        dispatch(loadingData(false))
+        const arrObjs = []; 
+        let obj = Object.assign({}, result.query.pages);
+         for(let item in obj){
+            arrObjs.push(obj[item]); // create array to recording each downloading objects  
+         } 
+         return arrObjs; 
+      })
+      .then(resArray => dispatch(receivedData(resArray))) // dispatch arrObjs
+      .catch(() => dispatch(hasError(true)));
+    }
+  }
+}
+
+const defaultState = {
+  isErr: false,
+  isLoading: false,
+  article: []
+}
+// one reducer for each state
+function reduceData(state = defaultState, action){
+  switch(action.type){
+    case 'RECEIVED_DATA':
+      return {
+                isErr: false,
+                isLoading: false,
+                article: action.article
+              }
+    case 'IS_LOADING':
+      return {
+                isErr: false,
+                isLoading: action.isLoading,
+                article: []
+              }
+    case 'ERROR':
+      return {
+                isErr: action.isErr,
+                isLoading: false,
+                article: []
+              }
+    default:
+      return state;   
+  }
+}
+// create store with middleware 
+const store = createStore(
+  reduceData,
+  applyMiddleware(thunk)
+);
+
+class AppWiki extends React.Component{
+  constructor(props){
+    super(props);
+    this.state = {
+      input: ''
+    }
+    this.handleChange = this.handleChange.bind(this);
+    this.handleSubmit = this.handleSubmit.bind(this);
+  }
+  
+  handleChange(e){
+    this.setState({input: e.target.value})
+  }
+  
+  handleSubmit(){
+    this.props.fetchData(this.state.input);
+    this.setState({input: ''})
+  }
+
+  componentDidMount() {
+   this.props.fetchData();
+  }
+  render(){
+    const list = this.props.article.map((item)=> { // loop for arr
+       if(item.thumbnail){ // if have image
+         return (
+          <div key={item.index}>
+            <a href={"https://en.wikipedia.org/?curid=" + item.pageid} >
+            <h2>{item.title}</h2>
+            <img src={item.thumbnail.source} 
+                 alt={item.pageimage}/>
+            <p>{item.extract}</p>
+             </a>
+          </div>
+          )
+       } else{
+         return (
+          <div key={item.index}>
+            <a href={"https://en.wikipedia.org/?curid=" + item.pageid} >
+            <h2>{item.title}</h2>
+            <p>{item.extract}</p>
+             </a>
+          </div>
+          )
+       }
+    })
+   
+    if (this.props.hasError) {
+      return <div>Error dowloading data</div>;
+    } else if (this.props.isLoaded) {
+      return <div className="loading">Loading...</div>;
+    } else {
+        return(
+        <div>
+          <input type="text" 
+                 onChange={this.handleChange} 
+                 value={this.state.input}/>
+          <input type="submit" 
+                 value="Submit" 
+                 onClick={this.handleSubmit}/>
+            
+            <div>
+              {list}
+            </div>
+        </div>
+      )
+    }
+  }
+}
+// state from actions
+const mapStateToProps = (state) => {
+  return {
+    isErr: state.isErr,
+    input: state.input,
+    isLoading: state.isLoading,
+    article: state.article
+  }
+}
+// send creator actions
+
+const mapDispatchToProps = (dispatch) => {
+  return {
+    fetchData: (data) => dispatch(fetchData(data))
+  }
+}
+// connect state, dispatch an component
+const Container = connect(mapStateToProps, 
+                          mapDispatchToProps)(AppWiki);
+
+ReactDOM.render(<Provider store={store}>
+                  <Container />
+                </Provider>, document.getElementById("root"));
