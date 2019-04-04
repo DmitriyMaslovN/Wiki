@@ -1,4 +1,4 @@
-const thunk = window.ReduxThunk.default; // codepen
+const thunk = window.ReduxThunk.default;
 const { applyMiddleware, createStore} = Redux;
 const { connect, Provider } = ReactRedux;
 
@@ -30,9 +30,8 @@ const receivedData = (article) =>{
 function fetchData(data){
   //console.log(data)
   return (dispatch) => {
-    dispatch(loadingData(true)); // loading...
-    
     if(data !== undefined){
+      dispatch(loadingData(true)); // loading...
       fetch(`https://en.wikipedia.org/w/api.php?format=json&action=query&origin=*&generator=search&gsrnamespace=0&gsrlimit=10&prop=pageimages|extracts&pilimit=max&exintro&explaintext&exsentences=2&exlimit=max&gsrsearch=${data}`)
       .then(res => res.json())
       .then(result =>{ // chain for dowloading data
@@ -101,7 +100,7 @@ class AppWiki extends React.Component{
   }
   
   handleSubmit(){
-    this.props.fetchData(this.state.input);
+    this.props.fetchData(this.state.input); // search data
     this.setState({input: ''})
   }
 
@@ -112,41 +111,46 @@ class AppWiki extends React.Component{
     const list = this.props.article.map((item)=> { // loop for arr
        if(item.thumbnail){ // if have image
          return (
-          <div key={item.index}>
-            <a href={"https://en.wikipedia.org/?curid=" + item.pageid} >
-            <h2>{item.title}</h2>
-            <img src={item.thumbnail.source} 
-                 alt={item.pageimage}/>
-            <p>{item.extract}</p>
-             </a>
-          </div>
+           <li className="item" key={item.index}>
+             <a href={"https://en.wikipedia.org/?curid=" + item.pageid} >
+                <div>
+                  <h2>{item.title}</h2>
+                  <img src={item.thumbnail.source} 
+                       alt={item.pageimage}/>
+                  <p>{item.extract}</p>
+                </div> 
+              </a>
+           </li>
           )
        } else{
          return (
-          <div key={item.index}>
-            <a href={"https://en.wikipedia.org/?curid=" + item.pageid} >
-            <h2>{item.title}</h2>
-            <p>{item.extract}</p>
-             </a>
-          </div>
+           <li className="item" key={item.index}>
+             <a href={"https://en.wikipedia.org/?curid=" + item.pageid} >
+                <div>
+                  <h2>{item.title}</h2>
+                  <p>{item.extract}</p> 
+                </div>
+              </a>
+           </li>
           )
        }
     })
-   
+    
     if (this.props.hasError) {
       return <div>Error dowloading data</div>;
-    } else if (this.props.isLoaded) {
+    } else if (this.props.isLoading) {
       return <div className="loading">Loading...</div>;
     } else {
         return(
-        <div>
-          <input type="text" 
+        <div className="container">
+          <input className="input"
+                 type="text" 
                  onChange={this.handleChange} 
                  value={this.state.input}/>
-          <input type="submit" 
+          <input className="submit"
+                 type="submit" 
                  value="Submit" 
-                 onClick={this.handleSubmit}/>
-            
+                 onClick={this.handleSubmit}/> 
             <div>
               {list}
             </div>
@@ -159,7 +163,6 @@ class AppWiki extends React.Component{
 const mapStateToProps = (state) => {
   return {
     isErr: state.isErr,
-    input: state.input,
     isLoading: state.isLoading,
     article: state.article
   }
