@@ -124,9 +124,14 @@ class AppWiki extends React.Component{
     } 
   }
  
-
+  handleKeyDown = (e) => {
+    if(e.keyCode == 13 && this.state.input !== ''){ // if event enter and has value
+      this.handleSubmit();
+    }
+  }
   componentDidMount() {
    this.props.fetchData();
+   document.addEventListener("keydown", this.handleKeyDown)
   }
   render(){
     const list = this.props.article.map((item, i)=> { // loop for arr
