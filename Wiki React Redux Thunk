@@ -1,4 +1,4 @@
-const thunk = window.ReduxThunk.default;
+const thunk = window.ReduxThunk.default; // codepen const
 const { applyMiddleware, createStore} = Redux;
 const { connect, Provider } = ReactRedux;
 
@@ -89,49 +89,75 @@ class AppWiki extends React.Component{
   constructor(props){
     super(props);
     this.state = {
-      input: ''
+      input: '',
+      search: 'noSearch',
+      focus: 'input'
     }
     this.handleChange = this.handleChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
+    this.onFocus = this.onFocus.bind(this);
   }
   
   handleChange(e){
-    this.setState({input: e.target.value})
+    if(e.target.value.length <= 30)
+    this.setState({input: e.target.value});
+  }
+  onFocus(e) {
+
+   this.setState({focus: 'focus'}) 
+   if( e.type === "blur" && this.state.input === ''){
+      this.setState({focus: 'input'});
+    }
   }
   
   handleSubmit(){
     this.props.fetchData(this.state.input); // search data
-    this.setState({input: ''})
+    if(this.state.input !== ''){
+      this.setState({input: '',
+                    search: 'search',
+                    focus: 'input'
+                    })
+    }else{
+      this.setState({input: '',
+                    search: 'noSearch'
+                    })
+    } 
   }
+ 
 
   componentDidMount() {
    this.props.fetchData();
   }
   render(){
-    const list = this.props.article.map((item)=> { // loop for arr
+    const list = this.props.article.map((item, i)=> { // loop for arr
        if(item.thumbnail){ // if have image
          return (
-           <li className="item" key={item.index}>
-             <a href={"https://en.wikipedia.org/?curid=" + item.pageid} >
+          <div className="divItem hvr-overline-from-center" key={item.index} > 
+           <a href={"https://en.wikipedia.org/?curid=" + item.pageid} >
+            <li className="item">
                 <div>
-                  <h2>{item.title}</h2>
-                  <img src={item.thumbnail.source} 
+                  <h2 className="title">{item.title}</h2>
+                  <img className="imgWiki"
+                       src={item.thumbnail.source} 
                        alt={item.pageimage}/>
-                  <p>{item.extract}</p>
+                  <p className="text">{item.extract}</p>
                 </div> 
-              </a>
-           </li>
+            </li>
+           </a>
+          </div>
           )
        } else{
          return (
-           <li className="item" key={item.index}>
-             <a href={"https://en.wikipedia.org/?curid=" + item.pageid} >
-                <div>
-                  <h2>{item.title}</h2>
-                  <p>{item.extract}</p> 
+           <div className="divItem hvr-outline-in" key={item.index}>
+            <a href={"https://en.wikipedia.org/?curid=" + item.pageid} >
+              <li className="item">
+               <div>
+                  <h2 className="title">{item.title}</h2>
+                  <p className="text">{item.extract}</p> 
                 </div>
-              </a>
-           </li>
+              </li>
+           </a>
+          </div>
           )
        }
     })
@@ -142,19 +168,24 @@ class AppWiki extends React.Component{
       return <div className="loading">Loading...</div>;
     } else {
         return(
-        <div className="container">
-          <input className="input"
-                 type="text" 
-                 onChange={this.handleChange} 
-                 value={this.state.input}/>
-          <input className="submit"
-                 type="submit" 
-                 value="Submit" 
-                 onClick={this.handleSubmit}/> 
+        <React.Fragment>
+            <div className={this.state.search}>
+              <input className={this.state.focus}
+                     type="text" 
+                     onFocus={this.onFocus}
+                     onBlur={this.onFocus}
+                     onChange={this.handleChange} 
+                     value={this.state.input}/>  
+              
+              <input className="submit"
+                     type="submit" 
+                     value="Search" 
+                     onClick={this.handleSubmit}/> 
+            </div>
             <div>
               {list}
             </div>
-        </div>
+        </React.Fragment>
       )
     }
   }
